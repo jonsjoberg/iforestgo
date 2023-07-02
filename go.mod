@@ -1,4 +1,4 @@
-module gitlab.com/mygo2/isolation_forest
+module github.com/jonsjoberg/isolation_forests
 
 go 1.20
 
