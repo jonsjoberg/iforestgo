@@ -1,4 +1,4 @@
-module github.com/jonsjoberg/isolation_forests
+module github.com/jonsjoberg/iforestgo
 
 go 1.20
 
