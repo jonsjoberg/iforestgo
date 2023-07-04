@@ -1,7 +1,6 @@
 package iforestgo
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 )
@@ -9,45 +8,27 @@ import (
 const EulersConstant = 0.5772156649
 
 type Tree[V Value] struct {
-	Root          *Node[V]
-	HeightLimit   int
+	Root        *Node[V]
+	HeightLimit int
 }
 
-func (t *Tree[V]) Print() {
-	fmt.Printf("heightLimit: %d\n", t.HeightLimit)
-	t.Root.Print()
-}
 
 type Node[V Value] struct {
 	Size         int
 	SplitPoint   V
 	SplitAttrIdx int
+	Height       int
 	NodeLeft     *Node[V]
 	NodeRight    *Node[V]
 	External     bool
 }
 
-func (n *Node[V]) Print() {
-	if n.External {
-		fmt.Printf("external - size: %d\n", n.Size)
-	} else {
-		fmt.Printf(
-			"splitAttrIdx: %d | splitPoint: %f | size: %d\n",
-			n.SplitAttrIdx,
-			n.SplitPoint,
-			n.Size,
-		)
-		n.NodeLeft.Print()
-		n.NodeRight.Print()
-	}
-}
-
 func NewTree[V Value](X *[][]V, sampleIdxs []int, r *rand.Rand) *Tree[V] {
-	l := int(math.Ceil(math.Log2(float64(len(*X)))))
+	l := int(math.Ceil(math.Log2(float64(len(sampleIdxs)))))
 
 	return &Tree[V]{
-		Root:          nextNode(X, sampleIdxs, 0, l, r),
-		HeightLimit:   l,
+		Root:        nextNode(X, sampleIdxs, 0, l, r),
+		HeightLimit: l,
 	}
 }
 
@@ -58,11 +39,14 @@ func nextNode[V Value](X *[][]V, idxs []int, treeHeight int, heightLimit int, r 
 	if treeHeight >= heightLimit || len(idxs) <= 1 {
 		node = Node[V]{
 			Size:     len(idxs),
+			Height:   treeHeight,
 			External: true,
 		}
 	} else {
+
+		nAttributes := len((*X)[0])
 		// random attribute
-		q := r.Intn(len((*X)[0]))
+		q := r.Intn(nAttributes)
 
 		p := selectSplitPoint(X, idxs, q, r)
 
@@ -111,23 +95,19 @@ func avgPathLength(n int) float64 {
 }
 
 func PathLength[V Value](x []V, t *Tree[V]) float64 {
-	return pathLengthRec[V](x, t.Root, 0)
+	
+	node := t.Root
+	for {
+		if node.External && node.Size == 1 {
+			return float64(node.Height)
+		} else if node.External {
+			return float64(node.Height) + avgPathLength(node.Size)
+		}
 
-}
-
-func pathLengthRec[V Value](x []V, n *Node[V], collector int) float64 {
-	if n.External {
-		if n.Size <= 1 {
-			return float64(collector)
+		if x[node.SplitAttrIdx] < node.SplitPoint {
+			node = node.NodeLeft
 		} else {
-			return float64(collector) + avgPathLength(n.Size)
+			node = node.NodeRight
 		}
 	}
-
-	if x[n.SplitAttrIdx] < n.SplitPoint {
-		return pathLengthRec[V](x, n.NodeLeft, collector+1)
-	} else {
-		return pathLengthRec[V](x, n.NodeRight, collector+1)
-	}
 }
-

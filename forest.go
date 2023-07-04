@@ -3,6 +3,8 @@ package iforestgo
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
+
 	"math"
 	"math/rand"
 )
@@ -15,14 +17,23 @@ type Forest[V Value] struct {
 	Trees           []*Tree[V]
 	SubSamplingSize int
 	rand            *rand.Rand
+	InputDimesion   int
 }
 
-func NewForest[V Value](X [][]V, nTrees int, subSamplingSize int, seed int64) *Forest[V] {
+var ErrSubSamplingSizeToolarge = errors.New("the requested sub-sampling size exceeds the total number of samples in the input data")
+
+func NewForest[V Value](X [][]V, nTrees int, subSamplingSize int, seed int64) (*Forest[V], error) {
+
+	if len(X) < subSamplingSize {
+		return nil, ErrSubSamplingSizeToolarge
+	}
+
 	r := rand.New((rand.NewSource(seed)))
 	forest := Forest[V]{
 		Trees:           make([]*Tree[V], nTrees),
 		SubSamplingSize: subSamplingSize,
 		rand:            r,
+		InputDimesion:   len(X[0]),
 	}
 
 	for i := 0; i < nTrees; i++ {
@@ -30,7 +41,7 @@ func NewForest[V Value](X [][]V, nTrees int, subSamplingSize int, seed int64) *F
 		forest.Trees[i] = NewTree(&X, sampleIdxs, forest.rand)
 	}
 
-	return &forest
+	return &forest, nil
 }
 
 func (f *Forest[V]) CalculateAnomalyScore(x []V) float64 {
