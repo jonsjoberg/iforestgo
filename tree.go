@@ -12,7 +12,6 @@ type Tree[V Value] struct {
 	HeightLimit int
 }
 
-
 type Node[V Value] struct {
 	Size         int
 	SplitPoint   V
@@ -95,10 +94,10 @@ func avgPathLength(n int) float64 {
 }
 
 func PathLength[V Value](x []V, t *Tree[V]) float64 {
-	
+
 	node := t.Root
 	for {
-		if node.External && node.Size == 1 {
+		if node.External && node.Size <= 1 {
 			return float64(node.Height)
 		} else if node.External {
 			return float64(node.Height) + avgPathLength(node.Size)

@@ -37,7 +37,7 @@ func NewForest[V Value](X [][]V, nTrees int, subSamplingSize int, seed int64) (*
 	}
 
 	for i := 0; i < nTrees; i++ {
-		sampleIdxs := rand.Perm(len(X))[:subSamplingSize]
+		sampleIdxs := r.Perm(len(X))[:subSamplingSize]
 		forest.Trees[i] = NewTree(&X, sampleIdxs, forest.rand)
 	}
 
@@ -52,7 +52,8 @@ func (f *Forest[V]) CalculateAnomalyScore(x []V) float64 {
 	}
 
 	avgPath := sumPathLength / float64(len(f.Trees))
-	return math.Pow(2, -avgPath/avgPathLength(int(f.SubSamplingSize)))
+	avgPathSubSamplingSize := avgPathLength(int(f.SubSamplingSize))
+	return math.Pow(2, -avgPath/avgPathSubSamplingSize)
 }
 
 func (f *Forest[V]) Serialize() (*bytes.Buffer, error) {

@@ -1,8 +1,12 @@
 package iforestgo
 
 import (
+	"encoding/csv"
 	"fmt"
+	"io"
 	"math/rand"
+	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -21,6 +25,49 @@ func compTree[V Value](a *Node[V], b *Node[V]) bool {
 	}
 
 	return compTree[V](a.NodeLeft, b.NodeLeft) && compTree[V](a.NodeRight, b.NodeRight)
+}
+
+func readDataset(path *string) ([][]float32, error) {
+
+	file, err := os.Open(*path)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	res := make([][]float32, 0)
+
+	reader := csv.NewReader(file)
+
+	nColumns := 0
+
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+		recordF32 := make([]float32, 0)
+		for _, c := range record {
+			f64, err := strconv.ParseFloat(c, 32)
+			if err != nil {
+				return nil, err
+			}
+			recordF32 = append(recordF32, float32(f64))
+			if nColumns == 0 {
+				nColumns = len(recordF32)
+			}
+		}
+
+		res = append(res, recordF32)
+
+	}
+
+	return res, nil
 }
 
 func TestForest(t *testing.T) {
@@ -80,6 +127,16 @@ func TestForest(t *testing.T) {
 			assert.True(t, compTree[float64](t1.Root, t2.Root))
 		}
 
+	})
+
+	t.Run("more complex", func(t *testing.T) {
+		path := "test_data/fit_data.csv"
+		d, err := readDataset(&path)
+		assert.NoError(t, err)
+		f, err := NewForest[float32](d, 512, 100, 1)
+		assert.NoError(t, err)
+		a := f.CalculateAnomalyScore(d[0])
+		assert.Equal(t, 0.6339188698016506, a)
 	})
 
 }
